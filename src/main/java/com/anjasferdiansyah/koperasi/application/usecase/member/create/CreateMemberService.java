@@ -2,7 +2,7 @@ package com.anjasferdiansyah.koperasi.application.usecase.member.create;
 
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberEmailException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberNikException;
-import com.anjasferdiansyah.koperasi.domain.model.Member;
+import com.anjasferdiansyah.koperasi.domain.model.member.Member;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;

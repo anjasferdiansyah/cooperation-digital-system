@@ -1,6 +1,6 @@
 package com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.approve;
 
-import com.anjasferdiansyah.koperasi.domain.model.MemberStatus;
+import com.anjasferdiansyah.koperasi.domain.model.member.MemberStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

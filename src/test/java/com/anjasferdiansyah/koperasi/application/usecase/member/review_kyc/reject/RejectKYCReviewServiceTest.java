@@ -1,13 +1,17 @@
 package com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.reject;
 
 import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
-import com.anjasferdiansyah.koperasi.domain.model.Member;
-import com.anjasferdiansyah.koperasi.domain.model.MemberStatus;
+import com.anjasferdiansyah.koperasi.domain.exception.DomainValidationException;
+import com.anjasferdiansyah.koperasi.domain.model.member.Member;
+import com.anjasferdiansyah.koperasi.domain.model.member.PageResult;
+import com.anjasferdiansyah.koperasi.domain.model.member.MemberStatus;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,12 +37,13 @@ class RejectKYCReviewServiceTest {
 
         RejectKYCReviewService service = new RejectKYCReviewService(repository);
         RejectKYCReviewResult result = service.execute(
-                new RejectKYCReviewCommand(member.getId(), "admin.kyc")
+                new RejectKYCReviewCommand(member.getId(), "admin.kyc", "Document is blurry")
         );
 
         assertEquals(member.getId(), result.memberId());
         assertEquals(MemberStatus.REJECTED, result.status());
         assertEquals("admin.kyc", result.kycReviewedBy());
+        assertEquals("Document is blurry", result.kycReviewReason());
     }
 
     @Test
@@ -48,7 +53,29 @@ class RejectKYCReviewServiceTest {
 
         assertThrows(
                 MemberNotFoundException.class,
-                () -> service.execute(new RejectKYCReviewCommand(UUID.randomUUID(), "admin.kyc"))
+                () -> service.execute(new RejectKYCReviewCommand(UUID.randomUUID(), "admin.kyc", "Invalid data"))
+        );
+    }
+
+    @Test
+    void shouldFailWhenReviewReasonIsBlank() {
+        InMemoryMemberRepository repository = new InMemoryMemberRepository();
+        Member member = Member.register(
+                UUID.randomUUID(),
+                "Anjas",
+                "anjas@mail.com",
+                "Jakarta",
+                "3173010101010001",
+                "6281234567890",
+                LocalDateTime.now()
+        );
+        repository.save(member);
+
+        RejectKYCReviewService service = new RejectKYCReviewService(repository);
+
+        assertThrows(
+                DomainValidationException.class,
+                () -> service.execute(new RejectKYCReviewCommand(member.getId(), "admin.kyc", "   "))
         );
     }
 
@@ -66,14 +93,56 @@ class RejectKYCReviewServiceTest {
         }
 
         @Override
+        public boolean existsByPhoneNumber(String phoneNumber) {
+            return storage.values().stream().anyMatch(member -> member.getPhoneNumber().equals(phoneNumber));
+        }
+
+        @Override
         public Optional<Member> findById(UUID id) {
             return Optional.ofNullable(storage.get(id));
+        }
+
+        @Override
+        public PageResult<Member> findAll(int page, int size, String sortBy, String sortDir) {
+            List<Member> members = storage.values().stream()
+                    .sorted(Comparator.comparing(Member::getRegisteredAt))
+                    .toList();
+            return toPageResult(members, page, size);
+        }
+
+        @Override
+        public PageResult<Member> search(String keyword, int page, int size, String sortBy, String sortDir) {
+            List<Member> members = storage.values().stream()
+                    .filter(member -> member.getFullName().toLowerCase().contains(keyword.toLowerCase())
+                            || member.getEmail().toLowerCase().contains(keyword.toLowerCase())
+                            || member.getNik().contains(keyword)
+                            || member.getPhoneNumber().contains(keyword))
+                    .sorted(Comparator.comparing(Member::getRegisteredAt))
+                    .toList();
+            return toPageResult(members, page, size);
         }
 
         @Override
         public Member save(Member member) {
             storage.put(member.getId(), member);
             return member;
+        }
+
+        private PageResult<Member> toPageResult(List<Member> source, int page, int size) {
+            int fromIndex = Math.min(page * size, source.size());
+            int toIndex = Math.min(fromIndex + size, source.size());
+            List<Member> items = source.subList(fromIndex, toIndex);
+            int totalPages = source.isEmpty() ? 0 : (int) Math.ceil((double) source.size() / size);
+
+            return new PageResult<>(
+                    items,
+                    page,
+                    size,
+                    source.size(),
+                    totalPages,
+                    page + 1 < totalPages,
+                    page > 0
+            );
         }
     }
 }

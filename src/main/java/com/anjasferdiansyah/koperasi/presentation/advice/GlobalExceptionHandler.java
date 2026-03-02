@@ -3,9 +3,11 @@ package com.anjasferdiansyah.koperasi.presentation.advice;
 import com.anjasferdiansyah.koperasi.domain.exception.DomainValidationException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberEmailException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberNikException;
+import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberPhoneNumberException;
 import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiErrorResponse;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiResponseWrapper;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -40,6 +42,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponseWrapper.failure("Request failed", error));
     }
 
+    @ExceptionHandler(DuplicateMemberPhoneNumberException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleDuplicateMemberPhoneNumber(DuplicateMemberPhoneNumberException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                "MEMBER_PHONE_NUMBER_ALREADY_EXISTS",
+                ex.getMessage(),
+                List.of()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
     @ExceptionHandler(MemberNotFoundException.class)
     public ResponseEntity<ApiResponseWrapper<Void>> handleMemberNotFound(MemberNotFoundException ex) {
         ApiErrorResponse error = new ApiErrorResponse(
@@ -58,6 +71,17 @@ public class GlobalExceptionHandler {
                 "BAD_REQUEST",
                 ex.getMessage(),
                 details
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                "BAD_REQUEST",
+                "Validation failed",
+                ex.getConstraintViolations().stream().map(violation -> violation.getMessage()).toList()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponseWrapper.failure("Request failed", error));
