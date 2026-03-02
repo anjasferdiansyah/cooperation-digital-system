@@ -2,6 +2,8 @@ package com.anjasferdiansyah.koperasi.presentation.advice;
 
 import com.anjasferdiansyah.koperasi.domain.exception.DomainValidationException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberEmailException;
+import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberNikException;
+import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiErrorResponse;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiResponseWrapper;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,28 @@ public class GlobalExceptionHandler {
                 List.of()
         );
         return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
+    @ExceptionHandler(DuplicateMemberNikException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleDuplicateMemberNik(DuplicateMemberNikException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                "MEMBER_NIK_ALREADY_EXISTS",
+                ex.getMessage(),
+                List.of()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
+    @ExceptionHandler(MemberNotFoundException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleMemberNotFound(MemberNotFoundException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                "MEMBER_NOT_FOUND",
+                ex.getMessage(),
+                List.of()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponseWrapper.failure("Request failed", error));
     }
 

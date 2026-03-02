@@ -1,12 +1,14 @@
 package com.anjasferdiansyah.koperasi.application.usecase.member.create;
 
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberEmailException;
+import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberNikException;
 import com.anjasferdiansyah.koperasi.domain.model.Member;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,6 +45,19 @@ class CreateMemberServiceTest {
         );
     }
 
+    @Test
+    void shouldRejectDuplicateNik() {
+        InMemoryMemberRepository repository = new InMemoryMemberRepository();
+        CreateMemberService service = new CreateMemberService(repository);
+
+        service.execute(new CreateMemberCommand("Anjas", "anjas@mail.com", "Jakarta", "3173010101010001", "6281234567890"));
+
+        assertThrows(
+                DuplicateMemberNikException.class,
+                () -> service.execute(new CreateMemberCommand("Budi", "budi@mail.com", "Bandung", "3173010101010001", "6281234567891"))
+        );
+    }
+
     private static class InMemoryMemberRepository implements MemberRepository {
 
         private final Map<UUID, Member> storage = new HashMap<>();
@@ -50,6 +65,16 @@ class CreateMemberServiceTest {
         @Override
         public boolean existsByEmail(String email) {
             return storage.values().stream().anyMatch(member -> member.getEmail().equals(email));
+        }
+
+        @Override
+        public boolean existsByNik(String nik) {
+            return storage.values().stream().anyMatch(member -> member.getNik().equals(nik));
+        }
+
+        @Override
+        public Optional<Member> findById(UUID id) {
+            return Optional.ofNullable(storage.get(id));
         }
 
         @Override

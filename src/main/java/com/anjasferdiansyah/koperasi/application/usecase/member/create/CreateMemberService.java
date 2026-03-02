@@ -1,8 +1,10 @@
 package com.anjasferdiansyah.koperasi.application.usecase.member.create;
 
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberEmailException;
+import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberNikException;
 import com.anjasferdiansyah.koperasi.domain.model.Member;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,19 +13,21 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
+@AllArgsConstructor
 public class CreateMemberService implements CreateMemberUseCase {
 
     private final MemberRepository memberRepository;
 
-    public CreateMemberService(MemberRepository memberRepository) {
-        this.memberRepository = memberRepository;
-    }
+
 
     @Override
     @Transactional
     public CreateMemberResult execute(CreateMemberCommand command) {
         if (memberRepository.existsByEmail(command.email())) {
             throw new DuplicateMemberEmailException(command.email());
+        }
+        if (memberRepository.existsByNik(command.nik())) {
+            throw new DuplicateMemberNikException(command.nik());
         }
 
         Member member = Member.register(

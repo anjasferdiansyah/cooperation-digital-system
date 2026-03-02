@@ -15,6 +15,9 @@ public class MemberPersistenceMapper {
         jpaEntity.setAddress(member.getAddress());
         jpaEntity.setNik(member.getNik());
         jpaEntity.setPhoneNumber(member.getPhoneNumber());
+        jpaEntity.setStatus(member.getStatus());
+        jpaEntity.setKycReviewedAt(member.getKycReviewedAt());
+        jpaEntity.setKycReviewedBy(member.getKycReviewedBy());
         jpaEntity.setRegisteredAt(member.getRegisteredAt());
         return jpaEntity;
     }
@@ -27,6 +30,9 @@ public class MemberPersistenceMapper {
                 entity.getAddress(),
                 entity.getNik(),
                 entity.getPhoneNumber(),
+                entity.getStatus(),
+                entity.getKycReviewedAt(),
+                entity.getKycReviewedBy(),
                 entity.getRegisteredAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
