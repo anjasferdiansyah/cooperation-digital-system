@@ -6,6 +6,9 @@ import com.anjasferdiansyah.koperasi.infrastructure.persistence.entity.MemberJpa
 import com.anjasferdiansyah.koperasi.infrastructure.persistence.mapper.MemberPersistenceMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Repository
 public class MemberRepositoryJpaAdapter implements MemberRepository {
 
@@ -20,6 +23,16 @@ public class MemberRepositoryJpaAdapter implements MemberRepository {
     @Override
     public boolean existsByEmail(String email) {
         return memberJpaRepository.existsByEmail(email);
+    }
+
+    @Override
+    public boolean existsByNik(String nik) {
+        return memberJpaRepository.existsByNik(nik);
+    }
+
+    @Override
+    public Optional<Member> findById(UUID id) {
+        return memberJpaRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override

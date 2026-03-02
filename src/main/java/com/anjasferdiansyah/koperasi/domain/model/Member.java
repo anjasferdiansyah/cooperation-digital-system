@@ -26,6 +26,9 @@ public final class Member extends BaseDomainEntity {
     private final String nik;
     private final String phoneNumber;
     private final LocalDateTime registeredAt;
+    private MemberStatus status;
+    private LocalDateTime kycReviewedAt;
+    private String kycReviewedBy;
 
     private Member(UUID id,
                    String fullName,
@@ -39,6 +42,7 @@ public final class Member extends BaseDomainEntity {
         this.email = sanitizeAndValidateEmail(email);
         this.address = sanitizeAndValidateAddress(address);
         this.nik = sanitizeAndValidateNik(nik);
+        this.status = MemberStatus.PENDING_KYC;
         this.phoneNumber = sanitizeAndValidatePhoneNumber(phoneNumber);
         this.registeredAt = requireRegisteredAt(registeredAt);
     }
@@ -60,11 +64,18 @@ public final class Member extends BaseDomainEntity {
                                    String address,
                                    String nik,
                                    String phoneNumber,
+                                   MemberStatus status,
+                                   LocalDateTime kycReviewedAt,
+                                   String kycReviewedBy,
                                    LocalDateTime registeredAt,
                                    LocalDateTime createdAt,
                                    LocalDateTime updatedAt) {
         requireId(id);
         Member member = new Member(id, fullName, email, address, nik, phoneNumber, registeredAt);
+        member.status = status == null ? MemberStatus.PENDING_KYC : status;
+        member.kycReviewedAt = kycReviewedAt;
+        member.kycReviewedBy = kycReviewedBy;
+
         member.createdAt = createdAt;
         member.updatedAt = validateAuditTimestamps(createdAt, updatedAt);
         return member;
@@ -143,6 +154,34 @@ public final class Member extends BaseDomainEntity {
             throw new DomainValidationException("Member registration time is required");
         }
         return registeredAt;
+    }
+
+    public void approveKyc(String reviewer, LocalDateTime now) {
+        if (this.status != MemberStatus.PENDING_KYC) {
+            throw new DomainValidationException("KYC already processed");
+        }
+
+        if (reviewer == null || reviewer.isBlank()) {
+            throw new DomainValidationException("Reviewer is required");
+        }
+
+        this.status = MemberStatus.ACTIVE;
+        this.kycReviewedAt = now;
+        this.kycReviewedBy = reviewer.trim();
+    }
+
+    public void rejectKyc(String reviewer, LocalDateTime now) {
+        if (this.status != MemberStatus.PENDING_KYC) {
+            throw new DomainValidationException("KYC already processed");
+        }
+
+        if (reviewer == null || reviewer.isBlank()) {
+            throw new DomainValidationException("Reviewer is required");
+        }
+
+        this.status = MemberStatus.REJECTED;
+        this.kycReviewedAt = now;
+        this.kycReviewedBy = reviewer.trim();
     }
 
     private static LocalDateTime validateAuditTimestamps(LocalDateTime createdAt, LocalDateTime updatedAt) {

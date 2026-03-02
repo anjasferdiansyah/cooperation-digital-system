@@ -1,7 +1,10 @@
 package com.anjasferdiansyah.koperasi.infrastructure.persistence.entity;
 
+import com.anjasferdiansyah.koperasi.domain.model.MemberStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -31,6 +34,16 @@ public class MemberJpaEntity extends AbstractJpaEntity {
 
     @Column(name = "phone_number", nullable = false, unique = true, length = 20)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private MemberStatus status;
+
+    @Column(name = "kyc_reviewed_at")
+    private LocalDateTime kycReviewedAt;
+
+    @Column(name = "kyc_reviewed_by", length = 120)
+    private String kycReviewedBy;
 
     @Column(name = "registered_at", nullable = false)
     private LocalDateTime registeredAt;
