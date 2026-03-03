@@ -1,7 +1,7 @@
 package com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.approve;
 
 import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
-import com.anjasferdiansyah.koperasi.domain.model.Member;
+import com.anjasferdiansyah.koperasi.domain.model.member.Member;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
 
 import lombok.AllArgsConstructor;

@@ -1,6 +1,7 @@
-package com.anjasferdiansyah.koperasi.domain.model;
+package com.anjasferdiansyah.koperasi.domain.model.member;
 
 import com.anjasferdiansyah.koperasi.domain.exception.DomainValidationException;
+import com.anjasferdiansyah.koperasi.domain.model.BaseDomainEntity;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -20,15 +21,18 @@ public final class Member extends BaseDomainEntity {
     private static final Pattern SIMPLE_EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
-    private final String fullName;
-    private final String email;
-    private final String address;
-    private final String nik;
-    private final String phoneNumber;
+    private String fullName;
+    private String email;
+    private String address;
+    private String nik;
+    private String phoneNumber;
     private final LocalDateTime registeredAt;
     private MemberStatus status;
     private LocalDateTime kycReviewedAt;
     private String kycReviewedBy;
+    private String kycReviewReason;
+    private String rejectedBy;
+    private LocalDateTime rejectedAt;
 
     private Member(UUID id,
                    String fullName,
@@ -67,6 +71,9 @@ public final class Member extends BaseDomainEntity {
                                    MemberStatus status,
                                    LocalDateTime kycReviewedAt,
                                    String kycReviewedBy,
+                                   String kycReviewReason,
+                                   String rejectedBy,
+                                   LocalDateTime rejectedAt,
                                    LocalDateTime registeredAt,
                                    LocalDateTime createdAt,
                                    LocalDateTime updatedAt) {
@@ -75,6 +82,9 @@ public final class Member extends BaseDomainEntity {
         member.status = status == null ? MemberStatus.PENDING_KYC : status;
         member.kycReviewedAt = kycReviewedAt;
         member.kycReviewedBy = kycReviewedBy;
+        member.kycReviewReason = kycReviewReason;
+        member.rejectedBy = rejectedBy;
+        member.rejectedAt = rejectedAt;
 
         member.createdAt = createdAt;
         member.updatedAt = validateAuditTimestamps(createdAt, updatedAt);
@@ -170,7 +180,7 @@ public final class Member extends BaseDomainEntity {
         this.kycReviewedBy = reviewer.trim();
     }
 
-    public void rejectKyc(String reviewer, LocalDateTime now) {
+    public void rejectKyc(String reviewer, String reviewReason, LocalDateTime now) {
         if (this.status != MemberStatus.PENDING_KYC) {
             throw new DomainValidationException("KYC already processed");
         }
@@ -178,10 +188,40 @@ public final class Member extends BaseDomainEntity {
         if (reviewer == null || reviewer.isBlank()) {
             throw new DomainValidationException("Reviewer is required");
         }
+        if (reviewReason == null || reviewReason.isBlank()) {
+            throw new DomainValidationException("Review reason is required");
+        }
 
         this.status = MemberStatus.REJECTED;
         this.kycReviewedAt = now;
         this.kycReviewedBy = reviewer.trim();
+        this.kycReviewReason = reviewReason.trim();
+        this.rejectedAt = now;
+        this.rejectedBy = reviewer.trim();
+    }
+
+    public void resubmitKyc() {
+        if (this.status != MemberStatus.REJECTED) {
+            throw new DomainValidationException("Only rejected member can resubmit KYC");
+        }
+
+        this.status = MemberStatus.PENDING_KYC;
+
+        // optional: clear previous rejection info
+        this.kycReviewReason = null;
+        this.rejectedBy = null;
+        this.rejectedAt = null;
+    }
+
+
+
+
+    public void updateProfile(String fullName, String email, String address, String nik, String phoneNumber) {
+        this.fullName = sanitizeAndValidateFullName(fullName);
+        this.email = sanitizeAndValidateEmail(email);
+        this.address = sanitizeAndValidateAddress(address);
+        this.nik = sanitizeAndValidateNik(nik);
+        this.phoneNumber = sanitizeAndValidatePhoneNumber(phoneNumber);
     }
 
     private static LocalDateTime validateAuditTimestamps(LocalDateTime createdAt, LocalDateTime updatedAt) {

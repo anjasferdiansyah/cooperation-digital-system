@@ -1,6 +1,6 @@
 package com.anjasferdiansyah.koperasi.infrastructure.persistence.mapper;
 
-import com.anjasferdiansyah.koperasi.domain.model.Member;
+import com.anjasferdiansyah.koperasi.domain.model.member.Member;
 import com.anjasferdiansyah.koperasi.infrastructure.persistence.entity.MemberJpaEntity;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +18,9 @@ public class MemberPersistenceMapper {
         jpaEntity.setStatus(member.getStatus());
         jpaEntity.setKycReviewedAt(member.getKycReviewedAt());
         jpaEntity.setKycReviewedBy(member.getKycReviewedBy());
+        jpaEntity.setKycReviewReason(member.getKycReviewReason());
+        jpaEntity.setRejectedBy(member.getRejectedBy());
+        jpaEntity.setRejectedAt(member.getRejectedAt());
         jpaEntity.setRegisteredAt(member.getRegisteredAt());
         return jpaEntity;
     }
@@ -33,6 +36,9 @@ public class MemberPersistenceMapper {
                 entity.getStatus(),
                 entity.getKycReviewedAt(),
                 entity.getKycReviewedBy(),
+                entity.getKycReviewReason(),
+                entity.getRejectedBy(),
+                entity.getRejectedAt(),
                 entity.getRegisteredAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

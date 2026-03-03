@@ -1,7 +1,7 @@
 package com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.reject;
 
 import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
-import com.anjasferdiansyah.koperasi.domain.model.Member;
+import com.anjasferdiansyah.koperasi.domain.model.member.Member;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +24,15 @@ public class RejectKYCReviewService implements RejectKYCReviewUseCase {
         Member member = memberRepository.findById(command.memberId())
                 .orElseThrow(() -> new MemberNotFoundException(command.memberId()));
 
-        member.rejectKyc(command.reviewer(), LocalDateTime.now(ZoneOffset.UTC));
+        member.rejectKyc(command.reviewer(), command.reviewReason(), LocalDateTime.now(ZoneOffset.UTC));
         Member saved = memberRepository.save(member);
 
         return new RejectKYCReviewResult(
                 saved.getId(),
                 saved.getStatus(),
                 saved.getKycReviewedAt(),
-                saved.getKycReviewedBy()
+                saved.getKycReviewedBy(),
+                saved.getKycReviewReason()
         );
     }
 }
