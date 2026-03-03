@@ -6,6 +6,7 @@ import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
 import com.anjasferdiansyah.koperasi.domain.model.member.Member;
 import com.anjasferdiansyah.koperasi.domain.model.member.MemberStatus;
 import com.anjasferdiansyah.koperasi.domain.model.savings.SavingsAccount;
+import com.anjasferdiansyah.koperasi.domain.model.savings.SavingsType;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
 import com.anjasferdiansyah.koperasi.domain.repository.SavingsAccountRepository;
 import lombok.AllArgsConstructor;
@@ -14,11 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 public class OpenSavingsAccountService implements OpenSavingsAccountUseCase {
+
+    private static final DateTimeFormatter ACCOUNT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     private final MemberRepository memberRepository;
     private final SavingsAccountRepository savingsAccountRepository;
@@ -40,7 +45,7 @@ public class OpenSavingsAccountService implements OpenSavingsAccountUseCase {
         SavingsAccount account = SavingsAccount.open(
                 UUID.randomUUID(),
                 command.memberId(),
-                command.accountNo(),
+                generateAccountNo(command.savingsType()),
                 command.savingsType(),
                 LocalDateTime.now(ZoneOffset.UTC)
         );
@@ -56,5 +61,12 @@ public class OpenSavingsAccountService implements OpenSavingsAccountUseCase {
                 saved.getBalance(),
                 saved.getOpenedAt()
         );
+    }
+
+    private String generateAccountNo(SavingsType savingsType) {
+        String typePrefix = savingsType.name().substring(0, 3);
+        String datePart = LocalDateTime.now(ZoneOffset.UTC).format(ACCOUNT_DATE_FORMATTER);
+        String randomPart = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase(Locale.ROOT);
+        return "SAV-" + typePrefix + "-" + datePart + "-" + randomPart;
     }
 }

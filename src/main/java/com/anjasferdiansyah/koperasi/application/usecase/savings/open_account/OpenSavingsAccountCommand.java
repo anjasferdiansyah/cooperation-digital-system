@@ -6,7 +6,6 @@ import java.util.UUID;
 
 public record OpenSavingsAccountCommand(
         UUID memberId,
-        String accountNo,
         SavingsType savingsType
 ) {
 }
