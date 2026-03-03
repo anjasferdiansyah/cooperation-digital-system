@@ -4,6 +4,7 @@ import com.anjasferdiansyah.koperasi.domain.exception.DomainValidationException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberEmailException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberNikException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberPhoneNumberException;
+import com.anjasferdiansyah.koperasi.domain.exception.DuplicateSavingsAccountException;
 import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiErrorResponse;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiResponseWrapper;
@@ -61,6 +62,17 @@ public class GlobalExceptionHandler {
                 List.of()
         );
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
+    @ExceptionHandler(DuplicateSavingsAccountException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleDuplicateSavingsAccount(DuplicateSavingsAccountException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                "SAVINGS_ACCOUNT_ALREADY_EXISTS",
+                ex.getMessage(),
+                List.of()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponseWrapper.failure("Request failed", error));
     }
 
