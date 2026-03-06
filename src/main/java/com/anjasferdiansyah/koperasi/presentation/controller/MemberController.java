@@ -9,6 +9,9 @@ import com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.appro
 import com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.reject.RejectKYCReviewCommand;
 import com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.reject.RejectKYCReviewResult;
 import com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.reject.RejectKYCReviewUseCase;
+import com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.resubmit.ResubmitKYCReviewCommand;
+import com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.resubmit.ResubmitKYCReviewResult;
+import com.anjasferdiansyah.koperasi.application.usecase.member.review_kyc.resubmit.ResubmitKYCReviewUseCase;
 import com.anjasferdiansyah.koperasi.application.usecase.member.update.UpdateMemberCommand;
 import com.anjasferdiansyah.koperasi.application.usecase.member.update.UpdateMemberResult;
 import com.anjasferdiansyah.koperasi.application.usecase.member.update.UpdateMemberUseCase;
@@ -53,17 +56,20 @@ public class MemberController {
     private final UpdateMemberUseCase updateMemberUseCase;
     private final ApproveKYCReviewUseCase approveKYCReviewUseCase;
     private final RejectKYCReviewUseCase rejectKYCReviewUseCase;
+    private final ResubmitKYCReviewUseCase resubmitKYCReviewUseCase;
     private final ListMembersUseCase listMembersUseCase;
 
     public MemberController(CreateMemberUseCase createMemberUseCase,
                             UpdateMemberUseCase updateMemberUseCase,
                             ApproveKYCReviewUseCase approveKYCReviewUseCase,
                             RejectKYCReviewUseCase rejectKYCReviewUseCase,
+                            ResubmitKYCReviewUseCase resubmitKYCReviewUseCase,
                             ListMembersUseCase listMembersUseCase) {
         this.createMemberUseCase = createMemberUseCase;
         this.updateMemberUseCase = updateMemberUseCase;
         this.approveKYCReviewUseCase = approveKYCReviewUseCase;
         this.rejectKYCReviewUseCase = rejectKYCReviewUseCase;
+        this.resubmitKYCReviewUseCase = resubmitKYCReviewUseCase;
         this.listMembersUseCase = listMembersUseCase;
     }
 
@@ -199,5 +205,22 @@ public class MemberController {
         );
 
         return ResponseEntity.ok(ApiResponseWrapper.success("KYC rejected successfully", response));
+    }
+
+    @PatchMapping("/{memberId}/kyc/resubmit")
+    public ResponseEntity<ApiResponseWrapper<KycReviewResponse>> resubmitKyc(@PathVariable UUID memberId) {
+        ResubmitKYCReviewResult result = resubmitKYCReviewUseCase.execute(
+                new ResubmitKYCReviewCommand(memberId)
+        );
+
+        KycReviewResponse response = new KycReviewResponse(
+                result.memberId(),
+                result.status(),
+                result.kycReviewedAt(),
+                result.kycReviewedBy(),
+                result.kycReviewReason()
+        );
+
+        return ResponseEntity.ok(ApiResponseWrapper.success("KYC resubmitted successfully", response));
     }
 }
