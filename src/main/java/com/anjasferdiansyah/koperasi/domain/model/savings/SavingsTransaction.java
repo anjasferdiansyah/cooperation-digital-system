@@ -12,6 +12,7 @@ import java.util.UUID;
 public final class SavingsTransaction extends BaseDomainEntity {
 
     private static final int MAX_REFERENCE_NO_LENGTH = 60;
+    private static final int MAX_EXTERNAL_REFERENCE_LENGTH = 60;
     private static final int MAX_NOTE_LENGTH = 255;
 
     private UUID savingsAccountId;
@@ -19,6 +20,7 @@ public final class SavingsTransaction extends BaseDomainEntity {
     private SavingsTransactionType type;
     private BigDecimal amount;
     private String referenceNo;
+    private String externalReference;
     private String note;
     private LocalDateTime occurredAt;
 
@@ -28,6 +30,7 @@ public final class SavingsTransaction extends BaseDomainEntity {
                                SavingsTransactionType type,
                                BigDecimal amount,
                                String referenceNo,
+                               String externalReference,
                                String note,
                                LocalDateTime occurredAt) {
         super(id);
@@ -36,6 +39,7 @@ public final class SavingsTransaction extends BaseDomainEntity {
         this.type = requireType(type);
         this.amount = requireAmount(amount);
         this.referenceNo = sanitizeReferenceNo(referenceNo);
+        this.externalReference = sanitizeExternalReference(externalReference);
         this.note = sanitizeNote(note);
         this.occurredAt = requireOccurredAt(occurredAt);
     }
@@ -46,10 +50,21 @@ public final class SavingsTransaction extends BaseDomainEntity {
                                             SavingsTransactionType type,
                                             BigDecimal amount,
                                             String referenceNo,
+                                            String externalReference,
                                             String note,
                                             LocalDateTime occurredAt) {
         requireId(id);
-        return new SavingsTransaction(id, savingsAccountId, memberId, type, amount, referenceNo, note, occurredAt);
+        return new SavingsTransaction(
+                id,
+                savingsAccountId,
+                memberId,
+                type,
+                amount,
+                referenceNo,
+                externalReference,
+                note,
+                occurredAt
+        );
     }
 
     public static SavingsTransaction rehydrate(UUID id,
@@ -58,6 +73,7 @@ public final class SavingsTransaction extends BaseDomainEntity {
                                                SavingsTransactionType type,
                                                BigDecimal amount,
                                                String referenceNo,
+                                               String externalReference,
                                                String note,
                                                LocalDateTime occurredAt,
                                                LocalDateTime createdAt,
@@ -70,6 +86,7 @@ public final class SavingsTransaction extends BaseDomainEntity {
                 type,
                 amount,
                 referenceNo,
+                externalReference,
                 note,
                 occurredAt
         );
@@ -131,6 +148,17 @@ public final class SavingsTransaction extends BaseDomainEntity {
         String sanitized = note.trim();
         if (sanitized.length() > MAX_NOTE_LENGTH) {
             throw new DomainValidationException("Savings transaction note is too long");
+        }
+        return sanitized;
+    }
+
+    private static String sanitizeExternalReference(String externalReference) {
+        if (externalReference == null || externalReference.isBlank()) {
+            return null;
+        }
+        String sanitized = externalReference.trim();
+        if (sanitized.length() > MAX_EXTERNAL_REFERENCE_LENGTH) {
+            throw new DomainValidationException("Savings transaction external reference is too long");
         }
         return sanitized;
     }

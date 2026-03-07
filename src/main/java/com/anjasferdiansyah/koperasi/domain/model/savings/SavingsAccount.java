@@ -71,6 +71,7 @@ public final class SavingsAccount extends BaseDomainEntity {
 
     public SavingsTransaction deposit(BigDecimal amount,
                                       String referenceNo,
+                                      String externalReference,
                                       String note,
                                       LocalDateTime occurredAt) {
         ensureActive();
@@ -84,6 +85,7 @@ public final class SavingsAccount extends BaseDomainEntity {
                 SavingsTransactionType.DEPOSIT,
                 depositAmount.toBigDecimal(),
                 referenceNo,
+                externalReference,
                 note,
                 occurredAt
         );
@@ -91,9 +93,15 @@ public final class SavingsAccount extends BaseDomainEntity {
 
     public SavingsTransaction withdraw(BigDecimal amount,
                                        String referenceNo,
+                                       String externalReference,
                                        String note,
                                        LocalDateTime occurredAt) {
         ensureActive();
+
+        if(!this.type.isWithdrawAllowed()){
+            throw new DomainValidationException("Withdrawal is not allowed for savings type " + this.type);
+        }
+
         Money withdrawalAmount = positiveAmount(amount, "Withdrawal amount must be greater than zero");
         Money currentBalance = Money.of(this.balance);
         if (currentBalance.isLessThan(withdrawalAmount)) {
@@ -109,6 +117,7 @@ public final class SavingsAccount extends BaseDomainEntity {
                 SavingsTransactionType.WITHDRAWAL,
                 withdrawalAmount.toBigDecimal(),
                 referenceNo,
+                externalReference,
                 note,
                 occurredAt
         );

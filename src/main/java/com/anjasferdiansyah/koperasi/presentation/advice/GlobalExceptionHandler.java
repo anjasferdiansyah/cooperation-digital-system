@@ -6,11 +6,14 @@ import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberNikExceptio
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateMemberPhoneNumberException;
 import com.anjasferdiansyah.koperasi.domain.exception.DuplicateSavingsAccountException;
 import com.anjasferdiansyah.koperasi.domain.exception.MemberNotFoundException;
+import com.anjasferdiansyah.koperasi.domain.exception.SavingsAccountNotFoundException;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiErrorResponse;
 import com.anjasferdiansyah.koperasi.presentation.response.ApiResponseWrapper;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -99,6 +102,62 @@ public class GlobalExceptionHandler {
                 .body(ApiResponseWrapper.failure("Request failed", error));
     }
 
+    @ExceptionHandler(SavingsAccountNotFoundException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleSavingsAccountNotFound(SavingsAccountNotFoundException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                "SAVINGS_ACCOUNT_NOT_FOUND",
+                ex.getMessage(),
+                List.of()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String message = getErrorMessage(ex);
+        ApiErrorResponse error;
+        if (message.contains("uq_savings_accounts_member_type")) {
+            error = new ApiErrorResponse(
+                    "SAVINGS_ACCOUNT_ALREADY_EXISTS",
+                    "Savings account already exists for member and type",
+                    List.of()
+            );
+        } else if (message.contains("uq_savings_accounts_account_no")) {
+            error = new ApiErrorResponse(
+                    "SAVINGS_ACCOUNT_NUMBER_CONFLICT",
+                    "Savings account number conflict, please retry",
+                    List.of()
+            );
+        } else if (message.contains("uq_savings_transactions_reference_no")) {
+            error = new ApiErrorResponse(
+                    "SAVINGS_TRANSACTION_REFERENCE_CONFLICT",
+                    "Savings transaction reference number already exists",
+                    List.of()
+            );
+        } else {
+            error = new ApiErrorResponse(
+                    "DATA_INTEGRITY_VIOLATION",
+                    "Request violates data integrity constraints",
+                    List.of()
+            );
+        }
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<ApiResponseWrapper<Void>> handleOptimisticLock(ObjectOptimisticLockingFailureException ex) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                "CONCURRENT_MODIFICATION",
+                "Data was modified by another transaction. Please retry.",
+                List.of()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponseWrapper.failure("Request failed", error));
+    }
+
     private List<String> extractValidationDetails(Exception ex) {
         if (!(ex instanceof MethodArgumentNotValidException validationException)) {
             return List.of();
@@ -113,5 +172,16 @@ public class GlobalExceptionHandler {
 
     private String toMessage(FieldError fieldError) {
         return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+    }
+
+    private String getErrorMessage(Exception ex) {
+        Throwable root = ex.getCause();
+        while (root != null && root.getCause() != null) {
+            root = root.getCause();
+        }
+        if (root == null || root.getMessage() == null) {
+            return "";
+        }
+        return root.getMessage().toLowerCase();
     }
 }
