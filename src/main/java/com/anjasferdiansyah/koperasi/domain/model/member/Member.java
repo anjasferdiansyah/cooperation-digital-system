@@ -207,7 +207,8 @@ public final class Member extends BaseDomainEntity {
 
         this.status = MemberStatus.PENDING_KYC;
 
-        // optional: clear previous rejection info
+        this.kycReviewedAt = null;
+        this.kycReviewedBy = null;
         this.kycReviewReason = null;
         this.rejectedBy = null;
         this.rejectedAt = null;
