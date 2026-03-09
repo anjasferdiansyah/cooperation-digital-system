@@ -10,6 +10,7 @@ import com.anjasferdiansyah.koperasi.domain.model.savings.SavingsType;
 import com.anjasferdiansyah.koperasi.domain.repository.MemberRepository;
 import com.anjasferdiansyah.koperasi.domain.repository.SavingsAccountRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class OpenSavingsAccountService implements OpenSavingsAccountUseCase {
 
     private static final DateTimeFormatter ACCOUNT_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int MAX_ACCOUNT_NO_RETRIES = 3;
 
     private final MemberRepository memberRepository;
     private final SavingsAccountRepository savingsAccountRepository;
@@ -42,15 +44,7 @@ public class OpenSavingsAccountService implements OpenSavingsAccountUseCase {
             throw new DuplicateSavingsAccountException(command.memberId(), command.savingsType());
         }
 
-        SavingsAccount account = SavingsAccount.open(
-                UUID.randomUUID(),
-                command.memberId(),
-                generateAccountNo(command.savingsType()),
-                command.savingsType(),
-                LocalDateTime.now(ZoneOffset.UTC)
-        );
-
-        SavingsAccount saved = savingsAccountRepository.save(account);
+        SavingsAccount saved = saveWithGeneratedAccountNo(command);
 
         return new OpenSavingsAccountResult(
                 saved.getId(),
@@ -61,6 +55,52 @@ public class OpenSavingsAccountService implements OpenSavingsAccountUseCase {
                 saved.getBalance(),
                 saved.getOpenedAt()
         );
+    }
+
+    private SavingsAccount saveWithGeneratedAccountNo(OpenSavingsAccountCommand command) {
+        for (int attempt = 1; attempt <= MAX_ACCOUNT_NO_RETRIES; attempt++) {
+            SavingsAccount account = SavingsAccount.open(
+                    UUID.randomUUID(),
+                    command.memberId(),
+                    generateAccountNo(command.savingsType()),
+                    command.savingsType(),
+                    LocalDateTime.now(ZoneOffset.UTC)
+            );
+
+            try {
+                return savingsAccountRepository.save(account);
+            } catch (DataIntegrityViolationException ex) {
+                if (isMemberTypeConflict(ex)) {
+                    throw new DuplicateSavingsAccountException(command.memberId(), command.savingsType());
+                }
+                if (isAccountNoConflict(ex) && attempt < MAX_ACCOUNT_NO_RETRIES) {
+                    continue;
+                }
+                throw ex;
+            }
+        }
+        throw new DomainValidationException("Failed to generate unique savings account number");
+    }
+
+    private boolean isMemberTypeConflict(DataIntegrityViolationException ex) {
+        String message = getErrorMessage(ex);
+        return message.contains("uq_savings_accounts_member_type");
+    }
+
+    private boolean isAccountNoConflict(DataIntegrityViolationException ex) {
+        String message = getErrorMessage(ex);
+        return message.contains("uq_savings_accounts_account_no");
+    }
+
+    private String getErrorMessage(Exception ex) {
+        Throwable root = ex.getCause();
+        while (root != null && root.getCause() != null) {
+            root = root.getCause();
+        }
+        if (root == null || root.getMessage() == null) {
+            return "";
+        }
+        return root.getMessage().toLowerCase(Locale.ROOT);
     }
 
     private String generateAccountNo(SavingsType savingsType) {
