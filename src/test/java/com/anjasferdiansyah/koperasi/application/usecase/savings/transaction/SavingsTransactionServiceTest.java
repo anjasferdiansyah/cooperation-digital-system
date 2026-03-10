@@ -8,6 +8,7 @@ import com.anjasferdiansyah.koperasi.application.usecase.savings.withdraw.Withdr
 import com.anjasferdiansyah.koperasi.application.usecase.savings.withdraw.WithdrawSavingsService;
 import com.anjasferdiansyah.koperasi.domain.exception.DomainValidationException;
 import com.anjasferdiansyah.koperasi.domain.exception.SavingsAccountNotFoundException;
+import com.anjasferdiansyah.koperasi.domain.model.member.PageResult;
 import com.anjasferdiansyah.koperasi.domain.model.savings.SavingsAccount;
 import com.anjasferdiansyah.koperasi.domain.model.savings.SavingsTransaction;
 import com.anjasferdiansyah.koperasi.domain.model.savings.SavingsType;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,7 +37,7 @@ class SavingsTransactionServiceTest {
         InMemorySavingsTransactionRepository transactionRepository = new InMemorySavingsTransactionRepository();
         DepositSavingsService service = new DepositSavingsService(accountRepository, transactionRepository);
 
-        SavingsAccount account = createAccount();
+        SavingsAccount account = createAccount(SavingsType.WAJIB);
         accountRepository.save(account);
 
         DepositSavingsResult result = service.execute(new DepositSavingsCommand(
@@ -59,7 +61,7 @@ class SavingsTransactionServiceTest {
         InMemorySavingsTransactionRepository transactionRepository = new InMemorySavingsTransactionRepository();
         WithdrawSavingsService service = new WithdrawSavingsService(accountRepository, transactionRepository);
 
-        SavingsAccount account = createAccount();
+        SavingsAccount account = createAccount(SavingsType.SUKARELA);
         account.deposit(
                 BigDecimal.valueOf(100_000),
                 "DEP-INIT-0001",
@@ -109,7 +111,7 @@ class SavingsTransactionServiceTest {
         InMemorySavingsTransactionRepository transactionRepository = new InMemorySavingsTransactionRepository();
         WithdrawSavingsService service = new WithdrawSavingsService(accountRepository, transactionRepository);
 
-        SavingsAccount account = createAccount();
+        SavingsAccount account = createAccount(SavingsType.SUKARELA);
         account.deposit(
                 BigDecimal.valueOf(20_000),
                 "DEP-INIT-0002",
@@ -131,12 +133,12 @@ class SavingsTransactionServiceTest {
         );
     }
 
-    private SavingsAccount createAccount() {
+    private SavingsAccount createAccount(SavingsType type) {
         return SavingsAccount.open(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                "SAV-WAJ-20260307-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8),
-                SavingsType.WAJIB,
+                "SAV-" + type.name().substring(0, 3) + "-20260307-" + UUID.randomUUID().toString().replace("-", "").substring(0, 8),
+                type,
                 LocalDateTime.now(ZoneOffset.UTC)
         );
     }
@@ -171,6 +173,11 @@ class SavingsTransactionServiceTest {
         public SavingsTransaction save(SavingsTransaction transaction) {
             storage.put(transaction.getId(), transaction);
             return transaction;
+        }
+
+        @Override
+        public PageResult<SavingsTransaction> findBySavingsAccountId(UUID accountId, int page, int size, String sortBy, String sortDir) {
+            return new PageResult<>(List.of(), page, size, 0, 0, false, false);
         }
     }
 }

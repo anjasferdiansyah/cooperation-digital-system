@@ -148,12 +148,51 @@ class SavingsControllerIntegrationTest {
         assertEquals("BAD_REQUEST", json.path("error").path("code").asText());
     }
 
+    @Test
+    void shouldListSavingsTransactions() throws Exception {
+        Member member = createAndSaveActiveMember();
+        UUID accountId = openSavingsAccount(member.getId(), SavingsType.SUKARELA);
+
+        String depositBody = objectMapper.writeValueAsString(Map.of(
+                "amount", 90_000,
+                "externalReference", uniqueReference("EXT-DEP"),
+                "note", "Setoran awal"
+        ));
+        HttpResponse<String> depositResponse = postJson("/api/savings/accounts/" + accountId + "/deposit", depositBody);
+        assertEquals(201, depositResponse.statusCode());
+
+        String withdrawBody = objectMapper.writeValueAsString(Map.of(
+                "amount", 40_000,
+                "externalReference", uniqueReference("EXT-WDR"),
+                "note", "Penarikan"
+        ));
+        HttpResponse<String> withdrawResponse = postJson("/api/savings/accounts/" + accountId + "/withdraw", withdrawBody);
+        assertEquals(201, withdrawResponse.statusCode());
+
+        HttpResponse<String> listResponse = get("/api/savings/accounts/" + accountId + "/transactions?page=0&size=10&sortBy=occurredAt&sortDir=asc");
+        assertEquals(200, listResponse.statusCode());
+
+        JsonNode json = objectMapper.readTree(listResponse.body());
+        assertTrue(json.path("success").asBoolean());
+        assertEquals(2, json.path("data").size());
+        assertEquals(0, json.path("meta").path("page").asInt());
+        assertEquals(10, json.path("meta").path("size").asInt());
+    }
+
     private HttpResponse<String> postJson(String path, String jsonBody)
             throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:" + port + path))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> get(String path) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + path))
+                .GET()
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
